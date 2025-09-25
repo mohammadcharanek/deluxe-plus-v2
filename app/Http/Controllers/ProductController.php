@@ -97,7 +97,7 @@ class ProductController extends Controller
                 break;
         }
 
-        $products   = $query->paginate(12)->appends(['q' => $q, 'sort' => $sort]);
+        $products   = $query->paginate(8)->appends(['q' => $q, 'sort' => $sort]);
         $categories = Category::with('children.children')->orderBy('name')->get();
         $brands     = Brand::orderBy('name')->get();
 
@@ -153,7 +153,7 @@ class ProductController extends Controller
             'products'   => $products,
             'categories' => $categories,
             'brands'     => $brands,
-            'brand'      => $brand, // pass the Brand model (cleaner for the view)
+            'brand'      => $brand,
         ]);
     }
 
@@ -176,7 +176,6 @@ class ProductController extends Controller
      * ADMIN PRODUCT MANAGEMENT
      * ============================================================ */
 
-    // Admin product list (with optional search/filters)
     public function adminIndex()
     {
         $q          = request('q');
@@ -249,10 +248,10 @@ class ProductController extends Controller
             'primary_index' => 'nullable|integer|min:0',
         ]);
 
-        // Flags & defaults
-        $validated['is_active'] = $request->has('is_active');
-        $validated['featured']  = $request->has('featured');
-        $validated['is_new']    = $request->has('is_new');
+        // Flags & defaults (use boolean() so hidden 0 + checked 1 works correctly)
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['featured']  = $request->boolean('featured');
+        $validated['is_new']    = $request->boolean('is_new');
         $validated['stock']     = $validated['stock'] ?? 0;
 
         // If a slug is provided, sanitize it; otherwise the Model will generate on creating()
@@ -348,10 +347,10 @@ class ProductController extends Controller
             'primary_image_id'             => 'nullable|integer|min:1',
         ]);
 
-        // Flags
-        $validated['is_active'] = $request->has('is_active');
-        $validated['featured']  = $request->has('featured');
-        $validated['is_new']    = $request->has('is_new');
+        // Flags (use boolean() so hidden 0 + checked 1 works correctly)
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['featured']  = $request->boolean('featured');
+        $validated['is_new']    = $request->boolean('is_new');
         $validated['stock']     = $validated['stock'] ?? $product->stock ?? 0;
 
         // If slug provided, sanitize; uniqueness is enforced by validation + model on updating()

@@ -152,12 +152,19 @@
                 <h3 class="font-semibold mb-3">Existing Images</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     @foreach ($product->images as $image)
+                        @php
+                            // Robust fallback: prefer accessor URL, else storage path, else placeholder
+                            $storageFallback = $image->image ? asset('storage/' . ltrim($image->image, '/')) : null;
+                            $src = $image->url ?? $storageFallback ?? asset('images/placeholder.png');
+                        @endphp
                         <div class="border rounded p-3 bg-gray-50 relative image-wrapper" data-image-id="{{ $image->id }}">
                             <div class="flex gap-3">
                                 <img
-                                    src="{{ $image->url ?? asset('storage/' . $image->image) }}"
+                                    src="{{ $src }}"
                                     alt="{{ $image->alt ?? $product->name }}"
                                     class="w-24 h-24 object-cover rounded border"
+                                    loading="lazy"
+                                    onerror="this.onerror=null;this.src='{{ asset('images/placeholder.png') }}';"
                                 />
                                 <div class="flex-1 space-y-2">
                                     <div>
@@ -312,9 +319,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('product-edit-form').addEventListener('submit', () => {
         const chosen = document.querySelector('input[name="new_primary_index"]:checked');
         primaryIndexHidden.value = chosen ? chosen.value : '';
-        // Note: if you selected a new upload as primary, your controller (as shared) will
-        // clear old primaries and set the chosen new one as primary.
-        // If none chosen, the "primary_image_id" for existing images can be used (see controller note below).
     });
 });
 </script>

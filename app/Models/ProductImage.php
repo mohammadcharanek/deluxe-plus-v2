@@ -22,7 +22,7 @@ class ProductImage extends Model
     ];
 
     // Expose computed URLs if you ever JSON this model
-    protected $appends = ['url'];
+    protected $appends = ['url', 'thumb_url'];
 
     /* ----------------------------- Relationships ----------------------------- */
 
@@ -35,7 +35,9 @@ class ProductImage extends Model
 
     public function scopeOrdered($q)
     {
-        return $q->orderBy('is_primary', 'desc')->orderBy('sort_order')->orderBy('id');
+        return $q->orderBy('is_primary', 'desc')
+                 ->orderBy('sort_order')
+                 ->orderBy('id');
     }
 
     public function scopePrimary($q)
@@ -50,20 +52,28 @@ class ProductImage extends Model
      */
     public function getUrlAttribute(): ?string
     {
-        if (!$this->image) return null;
+        // Use Eloquent getter (respects accessors/mutators/casts)
+        $path = $this->getAttribute('image');
+        if (!$path) return null;
 
-        // If already an absolute URL, return as-is
-        if (preg_match('~^https?://~i', $this->image)) {
-            return $this->image;
+        // If absolute or scheme-relative, return as-is
+        if (preg_match('~^(https?:)?//~i', $path)) {
+            return $path;
         }
 
-        // Otherwise, assume it's stored on the "public" disk
-        return Storage::disk('public')->url($this->image);
+        // Normalize slashes and leading prefixes
+        $normalized = str_replace('\\', '/', $path); // Windows safety
+        $normalized = ltrim($normalized, '/');
+        if (str_starts_with($normalized, 'storage/')) {
+            $normalized = substr($normalized, strlen('storage/')); // -> 'foo/bar.jpg'
+        }
+
+        // Public URL via "public" disk (needs: php artisan storage:link)
+        return Storage::disk('public')->url($normalized);
     }
 
     /**
      * Optional: a simple thumbnail URL (same file unless you generate thumbs).
-     * Keep for future compatibility.
      */
     public function getThumbUrlAttribute(): ?string
     {
